@@ -97,7 +97,9 @@ function viewEmployees() {
 
 }
 function viewRoles() { 
-  db.query('SELECT * FROM main_role', (err, data) => {
+  db.query(`SELECT main_role.id, main_role.title, main_role.salary, department.department_name
+  FROM main_role
+  JOIN department ON main_role.department_id = department.id;`, (err, data) => {
     if (err) {
       console.log(err)
       return;
