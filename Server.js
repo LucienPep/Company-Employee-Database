@@ -1,6 +1,7 @@
 const express = require('express');
 const mysql = require('mysql2');
 const inquirer = require('inquirer');
+const {printTable} = require('console-table-printer');
 
 const password = require('./password')
 
@@ -70,9 +71,8 @@ function pageStart(){
               addDepartment()
               break
           case 'Quit':
-              break
-
-      }
+            process.exit(1)
+        }
   })
 }
 
@@ -86,12 +86,35 @@ const db = mysql.createConnection(
 );
   
 function viewEmployees() { 
-  db.query('SELECT * FROM employee', (err, rows) => {
+  db.query('SELECT * FROM employee', (err, data) => {
     if (err) {
       console.log(err)
       return;
     }
-    console.log(rows)
+    printTable(data)
+    pageStart()
+  });
+
+}
+function viewRoles() { 
+  db.query('SELECT * FROM main_role', (err, data) => {
+    if (err) {
+      console.log(err)
+      return;
+    }
+    printTable(data)
+    pageStart()
+  });
+}
+
+function viewDepartment() { 
+  db.query('SELECT * FROM department', (err, data) => {
+    if (err) {
+      console.log(err)
+      return;
+    }
+    printTable(data)
+    pageStart()
   });
 }
 
