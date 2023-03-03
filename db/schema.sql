@@ -12,7 +12,7 @@ CREATE TABLE main_role (
     id INT NOT NULL PRIMARY KEY,
     title VARCHAR(30),
     salary DECIMAL,
-    department_id INT
+    department_id INT,
 
 
     FOREIGN KEY (department_id)
@@ -25,7 +25,7 @@ CREATE TABLE employee (
   first_name VARCHAR(30) NOT NULL,
   last_name VARCHAR(30) NOT NULL,
   role_id INT,
-  manager_id INT
+  manager_id INT,
 
   FOREIGN KEY (role_id)
   REFERENCES main_role(id)

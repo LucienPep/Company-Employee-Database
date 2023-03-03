@@ -1,6 +1,5 @@
 const inquirer = require('inquirer');
 
-
 function banner() {
     console.log(`
      ___________________________________________________________ 
@@ -23,27 +22,49 @@ function banner() {
    pageStart()
 }
 
-const
 
 function pageStart(){
     inquirer
     .prompt([
         {
-            type: 'input',
-            message: employeeQuestions.name,
-            name: 'name',
-        },
-        {
-            type: 'input',
-            message: employeeQuestions.id,
-            name: 'id',
-        },
-        {
-            type: 'input',
-            message: employeeQuestions.email,
-            name: 'email',
+            type: 'list',
+            message: 'What would you like to do?',
+            name: 'mainSelection',
+            choices: ['View All Employees', 'Add Employee', 'Update Employee Role', 'View All Roles', 'Add Role', 'View All Departments', 'Add Department', 'Quit']
         },
     ])
+    .then((response) => {
+        const choice = response.mainSelection
+
+        switch (choice) {
+            case 'View All Employees':
+                viewEmployees()
+                break
+            case 'Add Employee':
+                addEmployee()
+                break
+            case 'Update Employee Role':
+                updateRole()
+                break
+            case 'View All Roles':
+                viewRoles()
+                break
+            case 'Add Role':
+                addRole()
+                break
+            case 'View All Departments':
+                viewDepartment()
+                break
+            case 'Add Department':
+                addDepartment()
+                break
+            case 'Quit':
+                break
+
+        }
+    })
 }
+
+
 
 banner()
