@@ -42,7 +42,7 @@ function pageStart(){
           type: 'list',
           message: 'What would you like to do?',
           name: 'mainSelection',
-          choices: ['View All Employees', 'Add Employee', 'Update Employee Role', 'View All Roles', 'Add Role', 'View All Departments', 'Add Department', 'Update Employee Manager', 'View Employees by Manager', 'Quit']
+          choices: ['View All Employees', 'Add Employee', 'Update Employee Role', 'View All Roles', 'Add Role', 'View All Departments', 'Add Department', 'Update Employee Manager', 'View Employees by Manager', 'View Employees by Department', 'Quit']
       },
   ]).then((response) => {
       const choice = response.mainSelection
@@ -74,6 +74,9 @@ function pageStart(){
               break
           case 'View Employees by Manager':
               viewEmployeesByManager()
+              break
+            case 'View Employees by Department':
+              viewEmployeesByDepartment()
               break
           case 'Quit':
             process.exit(1)
@@ -435,7 +438,7 @@ function viewEmployeesByManagerTwo(emp4){
   .prompt([
       {
           type: 'list',
-          message: "Select manager to view employees?",
+          message: "Select manager to view employees",
           name: 'managerSelected',
           choices: emp4,
       },
@@ -456,8 +459,9 @@ function viewEmployeesByManagerTwo(emp4){
           console.log(err)
           return;
         }
-
+        var returnData = []
         var managerArray = []
+        var stopLength = data.length
         for(i = 0; i < data.length; i++){
           managerArray.push(data[i].id)
         
@@ -473,11 +477,117 @@ function viewEmployeesByManagerTwo(emp4){
             console.log(err)
             return;
             }
-            printTable(data)
+            returnData.push(data[0])
+            if(returnData.length == stopLength){
+              printTable(returnData)
+              pageStart()
+            }
           })
         }
       })
     })
+  })
+}
+
+function viewEmployeesByDepartment(){
+  db.query(`SELECT department_name FROM department;`, (err, data) => {
+    if (err) {
+      console.log(err)
+      return;
+    }
+    var departmentArray = []
+    for(i = 0; i < data.length; i++){
+      departmentArray.push(data[i].department_name)
+    }
+    viewEmployeesByDepartmentTwo(departmentArray)
+  });
+}
+
+function viewEmployeesByDepartmentTwo(data){
+  inquirer
+  .prompt([
+      {
+          type: 'list',
+          message: "Select department to view employees",
+          name: 'departmentSelected',
+          choices: data,
+      },
+  ]).then((response) => {
+
+    db.query(`SELECT id FROM department WHERE department_name = '${response.departmentSelected}'`, (err, data) => {
+      if (err) {
+        console.log(err)
+        return;
+      }
+      db.query(`SELECT id FROM main_role WHERE department_id = ${data[0].id}`, (err, data) => {
+        if (err) {
+          console.log(err)
+          return;
+        } 
+
+        var roleArrayOne = []
+        var return3Data = []
+        var roleLength = data.length
+
+        for(i = 0; i < data.length; i++){
+          roleArrayOne.push(data[i].id)
+        
+        db.query(`SELECT id FROM employee WHERE role_id = ${roleArrayOne[i]}`, (err, data) => {
+            if (err) {
+            console.log(err)
+            return;
+            }
+            
+            return3Data.push(data)
+            if(return3Data.length == roleLength){
+              var array1 = return3Data[0]
+              var array2 = return3Data[1]
+              var finalArray = array1.concat(array2)
+
+              viewEmployeesByDepartmentThree(finalArray)
+            }
+          })
+        }
+        
+      })
+    })
+
+function viewEmployeesByDepartmentThree(data){
+  var stopLength2 = data.length
+  var return2Data = []
+  var roleArray = []
+  for(i = 0; i < data.length; i++){
+    roleArray.push(data[i].id)
+
+    db.query(`SELECT e.id, e.first_name, e.last_name, main_role.title,    department.department_name, main_role.salary, CONCAT (m.first_name, ' ',  m.last_name) AS manager
+    FROM employee e
+    JOIN main_role ON e.role_id = main_role.id
+    JOIN department ON main_role.department_id = department.id
+    LEFT JOIN employee m ON e.manager_id = m.id
+    WHERE e.id = ${roleArray[i]}
+    ORDER BY e.id ASC
+    `, (err, data) => {
+      if (err) {
+      console.log(err)
+      return;
+      }
+      return2Data.push(data[0])
+      if(return2Data.length == stopLength2){
+        printTable(return2Data)
+        pageStart()
+      }
+    })
+  }
+}
+
+    //db.query(`SELECT id FROM employee WHERE manager_id = ${response}`, (err, data) => {
+    //  if (err) {
+    //    console.log(err)
+    //    return;
+    //  }
+    //})
+    
+
   })
 }
 
