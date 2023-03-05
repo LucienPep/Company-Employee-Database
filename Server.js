@@ -12,6 +12,8 @@ const PORT = process.env.PORT || 3001;
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
+var roles = ''
+
 function banner() {
   console.log(`
    ___________________________________________________________ 
@@ -86,7 +88,12 @@ const db = mysql.createConnection(
 );
   
 function viewEmployees() { 
-  db.query('SELECT * FROM employee', (err, data) => {
+  db.query(`SELECT e.id, e.first_name, e.last_name, main_role.title, department.department_name, main_role.salary, CONCAT (m.first_name, ' ', m.last_name) AS manager
+  FROM employee e
+  JOIN main_role ON e.role_id = main_role.id
+  JOIN department ON main_role.department_id = department.id
+  LEFT JOIN employee m ON e.manager_id = m.id;
+  `, (err, data) => {
     if (err) {
       console.log(err)
       return;
@@ -97,7 +104,7 @@ function viewEmployees() {
 
 }
 function viewRoles() { 
-  db.query(`SELECT main_role.id, main_role.title, main_role.salary, department.department_name
+  db.query(`SELECT main_role.id, main_role.title, department.department_name AS department, main_role.salary
   FROM main_role
   JOIN department ON main_role.department_id = department.id;`, (err, data) => {
     if (err) {
@@ -118,6 +125,86 @@ function viewDepartment() {
     printTable(data)
     pageStart()
   });
+}
+
+function addEmployee() {
+  db.query(`SELECT main_role.title FROM main_role`, (err, data) => {
+    if (err) {
+      console.log(err)
+      return;
+    }
+    
+    var roleArray = []
+    for(i = 0; i < data.length; i++){
+      roleArray.push(data[i].title)
+    }
+    
+    db.query(`SELECT CONCAT (employee.first_name, ' ', employee.last_name) AS employee_name FROM employee`, (err, data) => {
+      if (err) {
+        console.log(err)
+        return;
+      }
+      var employeeLength = data.length + 1
+      var employeeArray = ['null']
+      for(i = 0; i < data.length; i++){
+        employeeArray.push(data[i].employee_name)
+      }
+      addEmployeeTwo(roleArray, employeeArray, employeeLength)
+    })
+  })
+}
+
+function addEmployeeTwo(role, emp, len){ 
+    inquirer
+    .prompt([
+        {
+            type: 'input',
+            message: 'First Name',
+            name: 'firstName',
+        },
+        {
+            type: 'input',
+            message: 'Last Name',
+            name: 'lastName',
+        },
+        {
+            type: 'list',
+            message: 'Role',
+            name: 'role',
+            choices: role,
+        },
+        {
+            type: 'list',
+            message: 'Manager',
+            name: 'manager',
+            choices: emp,
+        },
+    ])
+    .then((response) => {
+      db.query(`SELECT id FROM main_role WHERE title = '${response.role}'`, (err, data) => {
+        if (err) {
+          console.log(err)
+          return;
+        }
+        const roleID = data[0].id
+
+        var managerArray = []
+        managerArray.push(response.manager.split(" "))
+
+        db.query(`SELECT id FROM employee WHERE first_name = '${managerArray[0][0]}' AND last_name = '${managerArray[0][1]}'`, (err, data) => {
+          if (err) {
+            console.log(err)
+            return;
+          }
+          const empID = data[0].id
+      
+          db.query(`INSERT INTO employee (id, first_name, last_name, role_id, manager_id)
+            VALUES (${len}, '${response.firstName}', '${response.lastName}', ${roleID}, ${empID})` 
+            )
+            pageStart()
+        })
+      })
+    })
 }
 
 
