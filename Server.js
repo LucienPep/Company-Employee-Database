@@ -42,7 +42,7 @@ function pageStart(){
           type: 'list',
           message: 'What would you like to do?',
           name: 'mainSelection',
-          choices: ['View All Employees', 'Add Employee', 'Update Employee Role', 'View All Roles', 'Add Role', 'View All Departments', 'Add Department', 'Update Employee Manager', 'View Employees by Manager', 'View Employees by Department', 'Quit']
+          choices: ['View All Employees', 'View All Roles', 'View All Departments', 'Add Employee', 'Add Role', 'Add Department', 'Update Employee Role', 'Update Employee Manager', 'View Employees by Manager', 'View Employees by Department', 'Delete Employee', 'Delete Role', 'Delete Department', 'Find Total Budget of Department', 'Quit']
       },
   ]).then((response) => {
       const choice = response.mainSelection
@@ -75,8 +75,20 @@ function pageStart(){
           case 'View Employees by Manager':
               viewEmployeesByManager()
               break
-            case 'View Employees by Department':
+          case 'View Employees by Department':
               viewEmployeesByDepartment()
+              break
+          case 'Delete Department':
+              deleteDepartment()
+              break
+          case 'Delete Employee':
+              deleteEmployee()
+              break
+          case 'Delete Role':
+              deleteRole()
+              break
+          case 'Find Total Budget of Department':
+              totalBudget()
               break
           case 'Quit':
             process.exit(1)
@@ -547,10 +559,11 @@ function viewEmployeesByDepartmentTwo(data){
               viewEmployeesByDepartmentThree(finalArray)
             }
           })
-        }
-        
+        } 
       })
     })
+  })
+}
 
 function viewEmployeesByDepartmentThree(data){
   var stopLength2 = data.length
@@ -580,16 +593,198 @@ function viewEmployeesByDepartmentThree(data){
   }
 }
 
-    //db.query(`SELECT id FROM employee WHERE manager_id = ${response}`, (err, data) => {
-    //  if (err) {
-    //    console.log(err)
-    //    return;
-    //  }
-    //})
-    
+function deleteDepartment(){
+  db.query(`SELECT department_name FROM department;`, (err, data) => {
+    if (err) {
+      console.log(err)
+      return;
+    }
+    var departmentArray = []
+    for(i = 0; i < data.length; i++){
+      departmentArray.push(data[i].department_name)
+    }
+    deleteDepartmentTwo(departmentArray)
+  });
+}
 
+function deleteDepartmentTwo(data){
+  inquirer
+  .prompt([
+      {
+          type: 'list',
+          message: "Select department to delete",
+          name: 'departmentSelected',
+          choices: data,
+      },
+  ]).then((response) => {
+    db.query(`SELECT id FROM department WHERE department_name = '${response.departmentSelected}'`, (err, data) => {
+      if (err) {
+        console.log(err)
+        return;
+      }
+      db.query(`DELETE FROM department WHERE id = ${data[0].id}`)
+      pageStart()
+    })
   })
 }
+
+function deleteRole() {
+  db.query(`SELECT main_role.title FROM main_role`, (err, data) => {
+    if (err) {
+      console.log(err)
+      return;
+    }
+    
+    var role2Array = []
+    for(i = 0; i < data.length; i++){
+      role2Array.push(data[i].title)
+    }
+    deleteRoleTwo(role2Array)
+  })
+}
+
+function deleteRoleTwo(data) {
+  inquirer
+  .prompt([
+      {
+          type: 'list',
+          message: "Select role to delete",
+          name: 'roleSelected',
+          choices: data,
+      },
+  ]).then((response) => {
+    db.query(`SELECT id FROM main_role WHERE title = '${response.roleSelected}'`, (err, data) => {
+      if (err) {
+        console.log(err)
+        return;
+      }
+      db.query(`DELETE FROM main_role WHERE id = ${data[0].id}`)
+      pageStart()
+    })
+  })
+}
+
+function deleteEmployee(){
+  db.query(`SELECT CONCAT (employee.first_name, ' ', employee.last_name) AS employee_name FROM employee`, (err, data) => {
+    if (err) {
+      console.log(err)
+      return;
+    }
+    
+    var employee3Array = []
+    for(i = 0; i < data.length; i++){
+      employee3Array.push(data[i].employee_name)
+    }
+    deleteEmployeeTwo(employee3Array)
+  })
+}
+
+function deleteEmployeeTwo(data) {
+  inquirer
+  .prompt([
+      {
+          type: 'list',
+          message: "Select employee to delete",
+          name: 'employeeSelected',
+          choices: data,
+      },
+  ]).then((response) => {
+    var employee2Array = []
+    employee2Array.push(response.employeeSelected.split(" "))
+
+    db.query(`SELECT id FROM employee WHERE first_name = '${employee2Array[0][0]}' AND last_name = '${employee2Array[0][1]}'`, (err, data) => {
+      if (err) {
+        console.log(err)
+        return;
+      }
+
+      db.query(`DELETE FROM employee WHERE id = ${data[0].id}`)
+      pageStart()
+
+    })
+  })
+}
+
+function totalBudget() {
+  db.query(`SELECT department_name FROM department;`, (err, data) => {
+    if (err) {
+      console.log(err)
+      return;
+    }
+    var departmentArray = []
+    for(i = 0; i < data.length; i++){
+      departmentArray.push(data[i].department_name)
+    }
+    totalBudgetTwo(departmentArray)
+  });
+}
+
+function totalBudgetTwo(data){
+  inquirer
+  .prompt([
+      {
+          type: 'list',
+          message: "Select department to view total utilised budget",
+          name: 'departmentSelected',
+          choices: data,
+      },
+  ]).then( (response) => {
+    db.query(`SELECT id FROM department WHERE department_name = '${response.departmentSelected}'`, (err, data) => {
+      if (err) {
+        console.log(err)
+        return;
+      }
+      
+      db.query(`SELECT id FROM main_role WHERE department_id = ${data[0].id}`, (err, data) => {
+        if (err) {
+          console.log(err)
+          return;
+        }
+
+       
+          db.query(`SELECT id FROM employee WHERE role_id = ${data[0].id} OR role_id = ${data[1].id}`, (err, data) => {
+            if (err) {
+            console.log(err)
+            return;
+            }  
+            totalBudgetThree(data)   
+          })  
+      })
+    })  
+  })
+}
+
+function totalBudgetThree(data) {
+  employee4Array = []
+  for(i = 0; data.length > i; i++){
+    employee4Array.push(data[i].id)
+  }
+  
+  for(i = 0; data.length > i; i++){
+    db.query(`SELECT role_id FROM employee WHERE id = ${employee4Array[i]}`, (err, data) => {
+      if (err) {
+      console.log(err)
+      return;
+      }
+      db.query(`SELECT salary FROM main_role WHERE id = ${data[0].role_id}`, (err, data) => {
+        if (err) {
+        console.log(err)
+        return;
+        }
+        totalBudgetFour(data)
+      })
+    })
+  }
+}
+
+function totalBudgetFour(data){
+  salaryArray = []
+  for(i = 0; data.length > i; i++){
+    salaryArray.push(data[i].salary)
+  }
+ console.log(salaryArray)
+}
+
 
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
