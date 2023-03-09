@@ -1,19 +1,32 @@
+//bring in needed packages
 const express = require('express');
 const mysql = require('mysql2');
 const inquirer = require('inquirer');
 const {printTable} = require('console-table-printer');
 
+//hidden password on another js file I have placed in the ignore file
 const password = require('./password')
 
 const app = express();
-
+//selects prefered port or 3001
 const PORT = process.env.PORT || 3001;
-
+//middleware
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
 var IDLength = 0
 
+//creates sql connection
+const db = mysql.createConnection(
+  {
+    host: 'localhost',
+    user: 'root',
+    password: password,
+    database: 'company_db'
+  }
+);
+
+//ascII banner for app start
 function banner() {
   console.log(`
    ___________________________________________________________ 
@@ -36,7 +49,7 @@ function banner() {
  pageStart()
 }
 
-
+//starting function to ask user what they would like to do using inquirer
 function pageStart(){
   inquirer
   .prompt([
@@ -48,7 +61,7 @@ function pageStart(){
       },
   ]).then((response) => {
       const choice = response.mainSelection
-
+//selection to run needed function
       switch (choice) {
           case 'View All Employees':
               viewEmployees()
@@ -98,15 +111,7 @@ function pageStart(){
   })
 }
 
-const db = mysql.createConnection(
-  {
-    host: 'localhost',
-    user: 'root',
-    password: password,
-    database: 'company_db'
-  }
-);
-  
+//view employee list function
 function viewEmployees() { 
   db.query(`SELECT e.id, e.first_name, e.last_name, main_role.title, department.department_name, main_role.salary, CONCAT (m.first_name, ' ', m.last_name) AS manager
   FROM employee e
@@ -124,7 +129,7 @@ function viewEmployees() {
   });
 
 }
-
+//view roles list function
 function viewRoles() { 
   db.query(`SELECT main_role.id, main_role.title, department.department_name AS department, main_role.salary
   FROM main_role
@@ -138,7 +143,7 @@ function viewRoles() {
     pageStart()
   });
 }
-
+//view department list function
 function viewDepartment() { 
   db.query(`SELECT * FROM department
   ORDER BY department.id ASC;`, (err, data) => {
@@ -151,6 +156,7 @@ function viewDepartment() {
   });
 }
 
+//function to add employee starts by collecting data for prompt
 function addEmployee() {
   db.query(`SELECT main_role.title FROM main_role`, (err, data) => {
     if (err) {
@@ -162,23 +168,24 @@ function addEmployee() {
     for(i = 0; i < data.length; i++){
       roleArray.push(data[i].title)
     }
-    
+    //query for manager selection
     db.query(`SELECT CONCAT (employee.first_name, ' ', employee.last_name) AS employee_name FROM employee`, (err, data) => {
       if (err) {
         console.log(err)
         return;
       }
-      var employeeLength = data.length + 1
       var employeeArray = ['null']
       for(i = 0; i < data.length; i++){
         employeeArray.push(data[i].employee_name)
       }
-      addEmployeeTwo(roleArray, employeeArray, employeeLength)
+      //run next function with collected data
+      addEmployeeTwo(roleArray, employeeArray)
     })
   })
 }
 
-function addEmployeeTwo(role, emp, len){ 
+//run inquirer prompt using data collected
+function addEmployeeTwo(role, emp){ 
     inquirer
     .prompt([
         {
@@ -205,6 +212,7 @@ function addEmployeeTwo(role, emp, len){
         },
     ])
     .then((response) => {
+      //selects id from string selection for employee parameter
       db.query(`SELECT id FROM main_role WHERE title = '${response.role}'`, (err, data) => {
         if (err) {
           console.log(err)
@@ -214,33 +222,34 @@ function addEmployeeTwo(role, emp, len){
 
         if(response.manager == 'null'){
           const empID = null
-          addEmployeeThree(len, response.firstName, response.lastName, roleID, empID)
+          addEmployeeThree(response.firstName, response.lastName, roleID, empID)
         }else{
 
         var managerArray = []
         managerArray.push(response.manager.split(" "))
-
+        //selects id for manager selected
         db.query(`SELECT id FROM employee WHERE first_name = '${managerArray[0][0]}' AND last_name = '${managerArray[0][1]}'`, (err, data) => {
           if (err) {
             console.log(err)
             return;
           }
           const empID = data[0].id
-
-          addEmployeeThree(len, response.firstName, response.lastName, roleID, empID)
+          //run final function with collected data
+          addEmployeeThree(response.firstName, response.lastName, roleID, empID)
         })
       }
       })
     })
 }
-
-function addEmployeeThree(id, first, last, role, emp){
+//create new employee using data
+function addEmployeeThree(first, last, role, emp){
   db.query(`INSERT INTO employee (first_name, last_name, role_id, manager_id)
   VALUES ('${first}', '${last}', ${role}, ${emp})` 
   )
   pageStart()
 }
 
+//first function to add department asks user for name ain inputs to database
 function addDepartment(){
   inquirer
   .prompt([
@@ -257,6 +266,7 @@ function addDepartment(){
     })
 }
 
+//add role collects data for inquirer prompt
 function addRole(){
   db.query(`SELECT department.department_name FROM department`, (err, data) => {
     if (err) {
@@ -271,7 +281,7 @@ function addRole(){
     addRoleTwo(depArray)
   })
 }
-
+//function to run prompt to add new role
 function addRoleTwo(dep){
   inquirer
   .prompt([
@@ -292,12 +302,13 @@ function addRoleTwo(dep){
       choices: dep,
   },
   ]).then((response) => {
+    //gets id from selected department
     db.query(`SELECT id FROM department WHERE department_name = '${response.departmentName}'`, (err, data) => {
       if (err) {
         console.log(err)
         return;
       }
-
+      //adds new role to database
       db.query(`INSERT INTO main_role (title, salary, department_id)
             VALUES ('${response.roleName}', ${response.roleSalary}, ${data[0].id})` 
             )
@@ -305,7 +316,7 @@ function addRoleTwo(dep){
     })
   })
 }
-
+//for updating role collects data from prompt 
 function updateRole(){
   db.query(`SELECT main_role.title FROM main_role`, (err, data) => {
     if (err) {
@@ -332,7 +343,7 @@ function updateRole(){
     })
   })
 }
-
+//prompt for role update
 function updateRoleTwo(role2, emp2){
   inquirer
   .prompt([
@@ -349,6 +360,7 @@ function updateRoleTwo(role2, emp2){
           choices: role2,
       },
   ]).then((response) => {
+    //selects id from main role and employee selected
     db.query(`SELECT id FROM main_role WHERE title = '${response.roleSelected}'`, (err, data) => {
       if (err) {
         console.log(err)
@@ -365,14 +377,14 @@ function updateRoleTwo(role2, emp2){
           return;
         }
         const emp2ID = data[0].id
-        
+        //updates employee role id
         db.query(`UPDATE employee SET role_id = ${role2ID} WHERE id = ${emp2ID}`)
         pageStart()
       })
     })
   })
 }
-
+// update manager gets employee names and combines them for prompt
 function updateManager(){
    db.query(`SELECT CONCAT (employee.first_name, ' ', employee.last_name) AS employee_name FROM employee`, (err, data) => {
     if (err) {
@@ -387,7 +399,7 @@ function updateManager(){
     updateManagerTwo(employee3Array)
   })
 }
-
+//prompt for manager updating
 function updateManagerTwo(emp3){
   inquirer
   .prompt([
@@ -404,7 +416,7 @@ function updateManagerTwo(emp3){
           choices: emp3,
       },
   ]).then((response) => {
-
+      //declare arrays and pushes inputed data and collects id from employee for user and manager
       var employeeArray = []
       employeeArray.push(response.employeeSelected.split(" "))
 
@@ -424,14 +436,14 @@ function updateManagerTwo(emp3){
             return;
           }
           const manID = data[0].id
-          
+          //updates employees manager id with newly selected one 
           db.query(`UPDATE employee SET manager_id = ${manID} WHERE id = ${emp3ID}`)
           pageStart()
         })
       })
     })
 }
-
+//view employees by manager gets data for employee names to select
 function viewEmployeesByManager(){
   db.query(`SELECT CONCAT (employee.first_name, ' ', employee.last_name) AS employee_name FROM employee`, (err, data) => {
     if (err) {
@@ -446,7 +458,7 @@ function viewEmployeesByManager(){
     viewEmployeesByManagerTwo(employee3Array)
   })
 }
-
+//prompt to ask which manager you wish to view employees
 function viewEmployeesByManagerTwo(emp4){
   inquirer
   .prompt([
@@ -457,7 +469,7 @@ function viewEmployeesByManagerTwo(emp4){
           choices: emp4,
       },
   ]).then((response) => {
-
+    // selects manager selected and selects employees where manager id is true
     var manager2Array = []
       manager2Array.push(response.managerSelected.split(" "))
 
@@ -478,7 +490,7 @@ function viewEmployeesByManagerTwo(emp4){
         var stopLength = data.length
         for(i = 0; i < data.length; i++){
           managerArray.push(data[i].id)
-        
+        //shows table showing all employees where manager id is true
         db.query(`SELECT e.id, e.first_name, e.last_name, main_role.title,    department.department_name, main_role.salary, CONCAT (m.first_name, ' ',  m.last_name) AS manager
           FROM employee e
           JOIN main_role ON e.role_id = main_role.id
@@ -502,7 +514,7 @@ function viewEmployeesByManagerTwo(emp4){
     })
   })
 }
-
+//view employees by department similar to last function, collects department name for prompt
 function viewEmployeesByDepartment(){
   db.query(`SELECT department_name FROM department;`, (err, data) => {
     if (err) {
@@ -516,7 +528,7 @@ function viewEmployeesByDepartment(){
     viewEmployeesByDepartmentTwo(departmentArray)
   });
 }
-
+//asks which department user wants to see employees
 function viewEmployeesByDepartmentTwo(data){
   inquirer
   .prompt([
@@ -527,7 +539,7 @@ function viewEmployeesByDepartmentTwo(data){
           choices: data,
       },
   ]).then((response) => {
-
+    //selects id for department then id for role where department id is true then id on employee where role id is true
     db.query(`SELECT id FROM department WHERE department_name = '${response.departmentSelected}'`, (err, data) => {
       if (err) {
         console.log(err)
@@ -566,7 +578,7 @@ function viewEmployeesByDepartmentTwo(data){
     })
   })
 }
-
+//final data inputed into function and prints all employees found in department into new table 
 function viewEmployeesByDepartmentThree(data){
   var stopLength2 = data.length
   var return2Data = []
@@ -594,7 +606,7 @@ function viewEmployeesByDepartmentThree(data){
     })
   }
 }
-
+//shows a list of departments and deletes selected using prompt
 function deleteDepartment(){
   db.query(`SELECT department_name FROM department;`, (err, data) => {
     if (err) {
@@ -608,7 +620,7 @@ function deleteDepartment(){
     deleteDepartmentTwo(departmentArray)
   });
 }
-
+//prompt for user to select department
 function deleteDepartmentTwo(data){
   inquirer
   .prompt([
@@ -619,12 +631,13 @@ function deleteDepartmentTwo(data){
           choices: data,
       },
   ]).then((response) => {
+    //delete selected department
     console.log(response.departmentSelected)
     db.query(`DELETE FROM department WHERE department_name = '${response.departmentSelected}'`)
     pageStart()    
   })
 }
-
+//gets role names for prompt
 function deleteRole() {
   db.query(`SELECT main_role.title FROM main_role`, (err, data) => {
     if (err) {
@@ -639,7 +652,7 @@ function deleteRole() {
     deleteRoleTwo(role2Array)
   })
 }
-
+//asks user which role is to be deleted
 function deleteRoleTwo(data) {
   inquirer
   .prompt([
@@ -650,6 +663,7 @@ function deleteRoleTwo(data) {
           choices: data,
       },
   ]).then((response) => {
+    //selects id and deletes role where id is true
     db.query(`SELECT id FROM main_role WHERE title = '${response.roleSelected}'`, (err, data) => {
       if (err) {
         console.log(err)
@@ -660,7 +674,7 @@ function deleteRoleTwo(data) {
     })
   })
 }
-
+//gets employee name data an combines for prompt
 function deleteEmployee(){
   db.query(`SELECT CONCAT (employee.first_name, ' ', employee.last_name) AS employee_name FROM employee`, (err, data) => {
     if (err) {
@@ -675,7 +689,7 @@ function deleteEmployee(){
     deleteEmployeeTwo(employee3Array)
   })
 }
-
+//prompt for user selection
 function deleteEmployeeTwo(data) {
   inquirer
   .prompt([
@@ -686,6 +700,7 @@ function deleteEmployeeTwo(data) {
           choices: data,
       },
   ]).then((response) => {
+    //select id and delete employee where id is true
     var employee2Array = []
     employee2Array.push(response.employeeSelected.split(" "))
 
@@ -701,7 +716,7 @@ function deleteEmployeeTwo(data) {
     })
   })
 }
-
+//gets department names for prompt
 function totalBudget() {
   db.query(`SELECT department_name FROM department;`, (err, data) => {
     if (err) {
@@ -715,7 +730,7 @@ function totalBudget() {
     totalBudgetTwo(departmentArray)
   });
 }
-
+//prompt to select which department
 function totalBudgetTwo(data){
   inquirer
   .prompt([
@@ -726,6 +741,7 @@ function totalBudgetTwo(data){
           choices: data,
       },
   ]).then( (response) => {
+    //gets id from department then id from main role where department id is true then employee id where any role id is true
     db.query(`SELECT id FROM department WHERE department_name = '${response.departmentSelected}'`, (err, data) => {
       if (err) {
         console.log(err)
@@ -750,7 +766,7 @@ function totalBudgetTwo(data){
     })  
   })
 }
-
+//collects totals of employee salary roles from main roles where id is true
 function totalBudgetThree(data) {
   employee4Array = []
   SalaryArray = []
@@ -779,8 +795,8 @@ function totalBudgetThree(data) {
     })
   }
 }
-
-async function totalBudgetFour(data){
+//collects total of all employees salaries within department and adds them together and logs them to console
+function totalBudgetFour(data){
   if (data.length === IDLength){
     finalSalaryArray = []
     
@@ -795,9 +811,10 @@ async function totalBudgetFour(data){
   }
 }
 
-
+//port listener 
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
   });
 
+//starting function
 banner()

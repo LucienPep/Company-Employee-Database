@@ -13,7 +13,7 @@ SO THAT I can organize and plan my business
 ### Table of Contents
 1. [Acceptance Criteria](#acceptance-criteria)
 2. [Work Description](#work-description)
-3. [Live Link](#link)
+3. [Tutorial Link](#link-to-video)
 4. [Screenshot](#screenshot)
 5. [Installation](#installation)
 6. [Usage](#usage)
@@ -45,23 +45,23 @@ THEN I am prompted to select an employee to update and their new role and this i
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ### Work Description
-I started by creating the SQL file
+I started by creating the SQL files schema and seed to start table structure and add in useable data. I then started on the console.log end in index and practiced with sql queries as I was still un familiar with their function. I then created the inquirer prompt to ask the users the designed questions, then assigned them to run functions that would run individual queries. I then one by one created the functions to perform the desired task using a collection of functions and queries. Once required functionality was completed I continued onto the bonus objectives where I found a lot of queries shared similar paths to what I had already created. I had a few issues with using for loops and I spent a lot of time figuring out how to achieve the final task of totalling up the salary amounts, after playing around with a lot of different functions of pushing and joining arrays I was able to come up with a good solution that looks for how many employees are in each department and totals that amount. I then went back and cleared up a few queries that I figured out how to optimise better and removed all test console.logs.
 
-### Link
+### Link To Video
 
-Link For webpage deployed on Heroku<br>[Week-11-Assignment-Online-Notepad](https://week-11-assignment-uadl.herokuapp.com/notes)
+Link For Tutorial Video<br>[Week-11-Assignment-Video](https://drive.google.com/file/d/1xx6WhXOqLy8F6E0-60_WFEzJhJ1cnnHV/view?usp=sharing)
 
 ### Screenshot
 
-![Online Notepad](./assets/Screenshot11.png)
+![Online Notepad](./assets/Screenshot12.png)
  
 ### Installation
 
-For this application express and uuid need to be installed. This can be done using npm install in console.
+For this application express, inquirer, console-table-printer and mysql2 need to be installed. This can be done using npm install in console.
 
 ### Usage
 
-express is used as the call location for our server calls and routing. uuid is used to create a unique id for each input made.
+express is used as the call location for our server calls and routing. inquirer was used to ask questions through the command line. Console-table-printer is used to print the SQL results into the console in a nicely formatted table. Mysql2 is used to add and retrieve data from sql files and utilise sql queries and the database.
 
 ### License
 
