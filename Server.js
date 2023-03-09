@@ -12,6 +12,8 @@ const PORT = process.env.PORT || 3001;
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
+var IDLength = 0
+
 function banner() {
   console.log(`
    ___________________________________________________________ 
@@ -233,8 +235,8 @@ function addEmployeeTwo(role, emp, len){
 }
 
 function addEmployeeThree(id, first, last, role, emp){
-  db.query(`INSERT INTO employee (id, first_name, last_name, role_id, manager_id)
-  VALUES (${id}, '${first}', '${last}', ${role}, ${emp})` 
+  db.query(`INSERT INTO employee (first_name, last_name, role_id, manager_id)
+  VALUES ('${first}', '${last}', ${role}, ${emp})` 
   )
   pageStart()
 }
@@ -617,14 +619,9 @@ function deleteDepartmentTwo(data){
           choices: data,
       },
   ]).then((response) => {
-    db.query(`SELECT id FROM department WHERE department_name = '${response.departmentSelected}'`, (err, data) => {
-      if (err) {
-        console.log(err)
-        return;
-      }
-      db.query(`DELETE FROM department WHERE id = ${data[0].id}`)
-      pageStart()
-    })
+    console.log(response.departmentSelected)
+    db.query(`DELETE FROM department WHERE department_name = '${response.departmentSelected}'`)
+    pageStart()    
   })
 }
 
@@ -756,6 +753,9 @@ function totalBudgetTwo(data){
 
 function totalBudgetThree(data) {
   employee4Array = []
+  SalaryArray = []
+  IDLength = data.length
+
   for(i = 0; data.length > i; i++){
     employee4Array.push(data[i].id)
   }
@@ -771,18 +771,28 @@ function totalBudgetThree(data) {
         console.log(err)
         return;
         }
-        totalBudgetFour(data)
+        
+        SalaryArray.push(data[0].salary)
+
+        totalBudgetFour(SalaryArray)
       })
     })
   }
 }
 
-function totalBudgetFour(data){
-  salaryArray = []
-  for(i = 0; data.length > i; i++){
-    salaryArray.push(data[i].salary)
+async function totalBudgetFour(data){
+  if (data.length === IDLength){
+    finalSalaryArray = []
+    
+    for(i = 0; data.length > i; i++){
+      finalSalaryArray.push(parseInt(data[i]))
+    }
+    
+    const sum = finalSalaryArray.reduce((runningTotal, employeeValue) => runningTotal + employeeValue, 0)
+
+    console.log('\n Total cost of department = $' + sum + '\n')
+    pageStart()
   }
- console.log(salaryArray)
 }
 
 
