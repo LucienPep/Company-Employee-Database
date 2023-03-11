@@ -1,5 +1,5 @@
-# Company-Employee-Database
-## Online-NotePad
+# Homework-Week-12
+## Company-Employee-Database
 
 My assignment was to build a command-line application from scratch to manage a company's employee database, using Node.js, Inquirer, and MySQL.
 
